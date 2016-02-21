@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <ev.h>
+#include "http_parser.h"
 
 struct server_opts {
 	char* host;
@@ -40,12 +41,27 @@ void init_opts(int argc, char** argv) {
     	}
 }
 
+int on_url_cb(http_parser* parser, const char* at, size_t length) {
+	char buf[1024];
+	bzero(&buf, sizeof(buf));
+	strncpy(buf, at, length);
+	printf("%s", buf);	
+}
 
 void read_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
 	char buf[1024];
 	
 	int r = recv(watcher->fd, buf, sizeof(buf), MSG_NOSIGNAL);
 	if (r > 0) {
+		http_parser* parser = malloc(sizeof(http_parser));
+		http_parser_init(parser, HTTP_REQUEST);
+
+		http_parser_settings settings;
+		settings.on_url = on_url_cb;	
+	
+		http_parser_execute(parser, &settings, buf, r);
+
+		free(parser);
 		send(watcher->fd, buf, r, MSG_NOSIGNAL);
 	}
 	
@@ -104,7 +120,7 @@ int main(int argc, char** argv) {
 
     	printf("Starting server!\n");
 
-    	//daemonize();
+	//daemonize();
     	loop();
 
    	return 0;
