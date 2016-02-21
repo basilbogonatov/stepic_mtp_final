@@ -40,6 +40,14 @@ void init_opts(int argc, char** argv) {
     }
 }
 
+void accept_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
+	int cliend_sd = accept(watcher->fd, 0, 0);
+	struct ev_io* w_client = (struct ev_io*)malloc(sizeof(struct ev_io));
+
+	free(w_client);
+}
+
+
 void loop() {
 	struct ev_loop* loop = ev_default_loop(0);
 	int sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -53,8 +61,11 @@ void loop() {
 	
 	listen(sd, SOMAXCONN);
 
-			
-	
+	struct ev_io w_accept;
+	ev_io_init(&w_accept, accept_cb, sd, EV_READ);
+	ev_io_start(loop, &w_accept);
+
+	while(1) ev_loop(loop, 0);
 }
 
 void daemonize() {
