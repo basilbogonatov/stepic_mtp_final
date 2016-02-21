@@ -77,6 +77,15 @@ void respond(int client_fd, const char* file_path) {
 	strcat(path, opts.dir);
 	strcat(path, file_path);
 
+	char* it = path;
+	while (it && *it) {
+		if (*it == '?') {
+			*it = '\0';	
+			break;
+		}
+		++it;
+	}
+
 	int size = load_file(path, &content_buf);
 	if (size > 0) {
 		static const char* templ = "HTTP/1.0 200 OK\r\n"
