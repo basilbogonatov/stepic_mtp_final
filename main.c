@@ -73,18 +73,26 @@ int load_file(const char* path, char** result) {
 
 void respond(int client_fd, const char* file_path) {
 	char* content_buf = 0;
-	load_file("/tmp/index.html", &content_buf);  	
-	int c_size = strlen(content_buf);
-	char templ[] = "HTTP/1.0 200 OK\r\n"
-		       "Content-length: %d\r\n"
-		       "Connection: close\r\n"
-		       "Content-Type: text/html\r\n"
-		       "\r\n"
-		       "%s";
+	char path[255] = {};
+	strcat(path, opts.dir);
+	strcat(path, file_path);
 
-	char buf[1024];
-	sprintf(buf, templ, c_size, content_buf); 		
-	send(client_fd, buf, strlen(buf), MSG_NOSIGNAL);
+	int size = load_file(path, &content_buf);
+	if (size > 0) {
+		static const char* templ = "HTTP/1.0 200 OK\r\n"
+		       			   "Content-length: %d\r\n"
+		       			   "Connection: close\r\n"
+		       			   "Content-Type: text/html\r\n"
+		       		           "\r\n"
+		       			   "%s";
+
+		char buf[1024];
+		sprintf(buf, templ, size, content_buf); 		
+		send(client_fd, buf, strlen(buf), MSG_NOSIGNAL);
+	} else {
+		static const char not_found[] = "HTTP/1.0 404 NOT FOUND\r\nContent-Type: text/html\r\n\r\n";
+		send(client_fd, not_found, sizeof(not_found), MSG_NOSIGNAL);
+	}
 }
 
 void read_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
