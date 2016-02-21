@@ -41,8 +41,20 @@ void init_opts(int argc, char** argv) {
 }
 
 void loop() {
+	struct ev_loop* loop = ev_default_loop(0);
+	int sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	
+	struct sockaddr_in addr;
+	bzero(&addr, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(opts.port);
+	inet_aton(opts.host, &addr.sin_addr);
+	bind(sd, (struct sockaddr*)&addr, sizeof(addr));
+	
+	listen(sd, SOMAXCONN);
 
-
+			
+	
 }
 
 void daemonize() {

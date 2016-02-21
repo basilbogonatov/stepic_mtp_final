@@ -1,2 +1,2 @@
 all:
-	gcc main.c -o final
+	gcc main.c -o final -lev -lrt
