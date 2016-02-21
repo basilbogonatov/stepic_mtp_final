@@ -50,8 +50,30 @@ int on_url_cb(http_parser* parser, const char* at, size_t length) {
 	return 0;	
 }
 
-void respond(int client_fd, char* file_path) {
-	char* content_buf = file_path; 	
+
+int load_file(const char* path, char** result) {
+	int size = 0;
+	FILE* f = fopen(path, "rb");
+	if (f == 0) {
+		*result = 0;
+		return -1; 
+	}
+	fseek(f, 0, SEEK_END);
+	size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	*result = (char*)malloc(size + 1);
+	if (size != fread(*result, sizeof(char), size, f)) {
+		free(*result);
+		return -2;
+	}
+	fclose(f);
+	(*result)[size] = 0;
+	return size;
+}
+
+void respond(int client_fd, const char* file_path) {
+	char* content_buf = 0;
+	load_file("/tmp/index.html", &content_buf);  	
 	int c_size = strlen(content_buf);
 	char templ[] = "HTTP/1.0 200 OK\r\n"
 		       "Content-length: %d\r\n"
