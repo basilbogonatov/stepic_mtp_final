@@ -40,13 +40,25 @@ void init_opts(int argc, char** argv) {
     }
 }
 
+
+void read_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
+	char buf[] = "zomg lol test\n";
+	send(watcher->fd, buf, sizeof(buf), MSG_NOSIGNAL);
+
+	ev_io_stop(loop, watcher);
+	shutdown(watcher->fd, SHUT_RDWR);
+	free(watcher);
+	return;
+} 
+
+
 void accept_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
-	int cliend_sd = accept(watcher->fd, 0, 0);
+	int client_sd = accept(watcher->fd, 0, 0);
 	struct ev_io* w_client = (struct ev_io*)malloc(sizeof(struct ev_io));
 
-	free(w_client);
+	ev_io_init(w_client, read_cb, client_sd, EV_READ);
+	ev_io_start(loop, w_client);
 }
-
 
 void loop() {
 	struct ev_loop* loop = ev_default_loop(0);
