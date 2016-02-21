@@ -172,8 +172,8 @@ int main(int argc, char** argv) {
 
     	printf("Starting server!\n");
 
-	//daemonize();
-    	loop();
+	daemonize();
+    	//loop();
 
    	return 0;
 }
