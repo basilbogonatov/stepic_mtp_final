@@ -41,14 +41,28 @@ void init_opts(int argc, char** argv) {
     	}
 }
 
+typedef struct {
+	char buf[1024];
+} url_data;
+
 int on_url_cb(http_parser* parser, const char* at, size_t length) {
-        char buf[1024];
-	bzero(&buf, sizeof(buf));
-	strncpy(buf, at, length);
-
-	printf("%s", buf);
-
+	strncpy(((url_data*)parser->data)->buf, at, length);
 	return 0;	
+}
+
+void respond(int client_fd, char* file_path) {
+	char* content_buf = file_path; 	
+	int c_size = strlen(content_buf);
+	char templ[] = "HTTP/1.0 200 OK\r\n"
+		       "Content-length: %d\r\n"
+		       "Connection: close\r\n"
+		       "Content-Type: text/html\r\n"
+		       "\r\n"
+		       "%s";
+
+	char buf[1024];
+	sprintf(buf, templ, c_size, content_buf); 		
+	send(client_fd, buf, strlen(buf), MSG_NOSIGNAL);
 }
 
 void read_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
@@ -59,15 +73,19 @@ void read_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
 		http_parser* parser = malloc(sizeof(http_parser));
 		http_parser_init(parser, HTTP_REQUEST);
 
+		url_data data;
+		bzero(&data, sizeof(data));
+		parser->data = &data;
+		
 		http_parser_settings settings;
 		bzero(&settings, sizeof(settings));
 		
 		settings.on_url = on_url_cb;	
 	
 		http_parser_execute(parser, &settings, buf, r);
-
 		free(parser);
-		send(watcher->fd, buf, r, MSG_NOSIGNAL);
+
+		respond(watcher->fd, data.buf); 
 	}
 	
 	ev_io_stop(loop, watcher);
@@ -75,7 +93,6 @@ void read_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
 	free(watcher);
 	return;
 } 
-
 
 void accept_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
 	int client_sd = accept(watcher->fd, 0, 0);
