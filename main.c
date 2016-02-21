@@ -42,10 +42,13 @@ void init_opts(int argc, char** argv) {
 }
 
 int on_url_cb(http_parser* parser, const char* at, size_t length) {
-	char buf[1024];
+        char buf[1024];
 	bzero(&buf, sizeof(buf));
 	strncpy(buf, at, length);
-	printf("%s", buf);	
+
+	printf("%s", buf);
+
+	return 0;	
 }
 
 void read_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
@@ -57,6 +60,8 @@ void read_cb(struct ev_loop* loop, struct ev_io* watcher, int revents) {
 		http_parser_init(parser, HTTP_REQUEST);
 
 		http_parser_settings settings;
+		bzero(&settings, sizeof(settings));
+		
 		settings.on_url = on_url_cb;	
 	
 		http_parser_execute(parser, &settings, buf, r);
